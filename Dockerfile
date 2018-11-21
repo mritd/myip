@@ -13,7 +13,8 @@ RUN apk upgrade \
     && mv /tmp/GeoLite2-City.mmdb /geoip.mmdb \
     && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \
-    && rm -rf /var/cache/apk/* /tmp/*
+    && apk del tar wget \
+    && rm -rf GeoLite2-City.tar.gz /var/cache/apk/* /tmp/*
 
 COPY dist/myip_linux_amd64 /usr/bin/myip
 
