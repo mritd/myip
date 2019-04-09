@@ -21,11 +21,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/oschwald/geoip2-golang"
 )
 
 var dbPath string
-var downloadCh = make(chan int, 1)
 
 func remoteIp(req *http.Request) string {
 	remoteAddr := req.RemoteAddr
@@ -49,24 +50,52 @@ func getIP(w http.ResponseWriter, r *http.Request) {
 	var addr string
 	db, err := geoip2.Open(dbPath)
 	if err != nil {
-		fmt.Println(err)
+		logrus.Error(err)
+		return
 	} else {
 		city, err := db.City(net.ParseIP(ip))
 		if err != nil {
-			fmt.Println(err)
+			logrus.Error(err)
 			addr = "Unknown"
 		} else {
 			addr = fmt.Sprintf("%s %s %s", city.Continent.Names["zh-CN"], city.Country.Names["zh-CN"], city.City.Names["zh-CN"])
 		}
 	}
 
-	w.Write([]byte(fmt.Sprintf("IP: %s\nAddress: %s\n", ip, addr)))
+	_, err = w.Write([]byte(fmt.Sprintf("IP: %s\nAddress: %s\n", ip, addr)))
+	if err != nil {
+		logrus.Error(err)
+	}
+}
+
+func getIP2Json(w http.ResponseWriter, r *http.Request) {
+	ip := remoteIp(r)
+	var addr string
+	db, err := geoip2.Open(dbPath)
+	if err != nil {
+		logrus.Error(err)
+		return
+	} else {
+		city, err := db.City(net.ParseIP(ip))
+		if err != nil {
+			logrus.Error(err)
+			addr = "Unknown"
+		} else {
+			addr = fmt.Sprintf("%s %s %s", city.Continent.Names["zh-CN"], city.Country.Names["zh-CN"], city.City.Names["zh-CN"])
+		}
+	}
+
+	_, err = w.Write([]byte(fmt.Sprintf(`{"IP":"%s","Address":"%s"}`, ip, addr)))
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 func Run(host net.IP, port int, db string) {
 	dbPath = db
 	fmt.Printf("Server listening at: %s\n", fmt.Sprintf("%s:%d", host, port))
 	http.HandleFunc("/", getIP)
+	http.HandleFunc("/json", getIP2Json)
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), nil)
 	if err != nil {
 		fmt.Println(err)

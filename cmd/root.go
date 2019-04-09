@@ -16,11 +16,9 @@
 package cmd
 
 import (
-	"fmt"
-	"net"
-	"os"
-
 	"github.com/mritd/myip/myip"
+	"github.com/sirupsen/logrus"
+	"net"
 
 	"github.com/spf13/cobra"
 )
@@ -41,8 +39,7 @@ Show my ip address.`,
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
 }
 
